@@ -94,30 +94,34 @@ if __name__ == "__main__":
     export_parser.set_defaults(func=_export)
 
     # Convert to FP16
-    def _quantize(args):
+    def _convert(args):
         gptj.convert_to_fp16(
             args.onnx_model_path, args.onnx_model_path, args.model_name
         )
 
-    quantize_parser = subparsers.add_parser(
-        "quantize", help="Quantize the Optimum model from FP32 to FP16"
+    convert_parser = subparsers.add_parser(
+        "convert", help="Convert the Optimum model from FP32 to FP16"
     )
-    quantize_parser.add_argument(
+    convert_parser.add_argument(
         "--onnx-model-path",
         help="Path to source ONNX model - e.g. /gptj.onnx/model.onnx",
         default=DEFAULT_MODEL_PATH,
     )
-    quantize_parser.add_argument(
+    convert_parser.add_argument(
         "--model-name",
         help="Filename of the ONNX model - e.g. decoder_model.onnx",
         default=DEFAULT_MODEL_NAME,
     )
-    quantize_parser.set_defaults(func=_quantize)
+    convert_parser.set_defaults(func=_convert)
 
     # Generate text - run the model
     def _generate(args):
         model = gptj.GPTJModel.load(args.onnx_model_path, args.device)
-        result = model.generate(args.prompt, args.sequence_length)
+        result = model.generate(
+            prompt=args.prompt,
+            sequence_length=args.sequence_length,
+            batch_size=1,
+        )
         print(result)
 
     generate_parser = subparsers.add_parser(
@@ -134,6 +138,7 @@ if __name__ == "__main__":
     generate_parser.add_argument(
         "--sequence-length",
         help="Length of text to generate",
+        type=int,
         default=DEFAULT_SEQUENCE_LENGTH,
     )
     generate_parser.set_defaults(func=_generate)
@@ -146,7 +151,7 @@ if __name__ == "__main__":
             DEFAULT_PROMPT,
             args.sequence_lengths,
             args.batch_sizes,
-            args.result_path,
+            args.result_csv,
         )
 
     benchmark_parser = subparsers.add_parser(
@@ -170,7 +175,7 @@ if __name__ == "__main__":
         "--batch-sizes", help="Batch sizes", nargs="*", type=int, default=[1]
     )
     benchmark_parser.add_argument(
-        "--result-path", help="Path to target results csv", default="results.csv"
+        "--result-csv", help="Path to target results csv", default="results.csv"
     )
     benchmark_parser.set_defaults(func=_benchmark)
 
@@ -185,14 +190,24 @@ if __name__ == "__main__":
         help="Path to exported ONNX model. Transformers PyTorch model will be used if unspecified.",
     )
     serve_parser.add_argument("--device", help="CPU or CUDA", default=DEFAULT_DEVICE)
-    serve_parser.add_argument("--port", help="Server port", default=DEFAULT_SERVER_PORT)
+    serve_parser.add_argument(
+        "--port", help="Server port", type=int, default=DEFAULT_SERVER_PORT
+    )
     serve_parser.set_defaults(func=_serve)
 
-    # Parse and execute commands
+    # Example commands
+    """
     generate_args = "generate --onnx-model-path gptj.onnx --prompt".split()
     generate_args.append('"once upon a time, there was a little monkey,"')
     benchmark_args = "benchmark --onnx-model-path gptj.onnx --sequence-lengths 64 --batch-sizes 1 2 4".split()
     serve_args = "serve --onnx-model-path gptj.onnx".split()
+    """
+    test_args = None
 
-    args = parser.parse_args(serve_args)
+    # Parse and execute commands
+    args = parser.parse_args(test_args)
+    if not hasattr(args, "func"):
+        parser.print_help()
+        exit(1)
+
     args.func(args)
