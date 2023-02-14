@@ -1,0 +1,9 @@
+protobuf==3.20.2
+numpy==1.23.5
+onnxruntime-gpu==1.13.1
+onnxconverter-common==1.13.0
+torch==1.13.1+cu116 
+torchvision==0.14.1+cu116
+optimum[onnxruntime] -e git+https://github.com/huggingface/optimum.git@4f2ef17f1f638aab35de7cb3e186d773ef6f6ab2
+transformers==4.26.0
+black==23.1.0
