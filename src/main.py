@@ -5,6 +5,7 @@ import typing
 
 import gptj
 import benchmark
+import server
 
 logger = logging.getLogger(__name__)
 
@@ -176,8 +177,7 @@ if __name__ == "__main__":
     # Serve an API endpoint
     def _serve(args):
         model = gptj.GPTJModel.load(args.onnx_model_path, args.device)
-        # server.host(args.port, model)
-        pass
+        server.launch(args.port, model)
 
     serve_parser = subparsers.add_parser("serve", help="Host an endpoint")
     serve_parser.add_argument(
@@ -188,30 +188,11 @@ if __name__ == "__main__":
     serve_parser.add_argument("--port", help="Server port", default=DEFAULT_SERVER_PORT)
     serve_parser.set_defaults(func=_serve)
 
-    # Query a running API endpoint
-    def _query(args):
-        # client.query(args.url, args.text, args.length)
-        pass
-
-    query_parser = subparsers.add_parser("query", help="Host an endpoint")
-    query_parser.add_argument(
-        "--url", help="Server URL", default=f"http://localhost:{DEFAULT_SERVER_PORT}"
-    )
-    query_parser.add_argument(
-        "--prompt", help="Prompt to use for generating text", default=DEFAULT_PROMPT
-    )
-    query_parser.add_argument(
-        "--sequence-length",
-        help="Length of text to generate",
-        default=DEFAULT_SEQUENCE_LENGTH,
-    )
-    query_parser.set_defaults(func=_query)
-
     # Parse and execute commands
     generate_args = "generate --onnx-model-path gptj.onnx --prompt".split()
     generate_args.append('"once upon a time, there was a little monkey,"')
-
     benchmark_args = "benchmark --onnx-model-path gptj.onnx --sequence-lengths 64 --batch-sizes 1 2 4".split()
+    serve_args = "serve --onnx-model-path gptj.onnx".split()
 
-    args = parser.parse_args(benchmark_args)
+    args = parser.parse_args(serve_args)
     args.func(args)
