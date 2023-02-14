@@ -3,7 +3,7 @@ import logging
 import dataclasses
 import typing
 
-from optimum.onnxruntime import ORTModelForCausalLM
+from optimum.onnxruntime import ORTModel, ORTModelForCausalLM
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 logger = logging.getLogger(__name__)
@@ -66,6 +66,12 @@ class GPTJModel:
                 return "TensorrtExecutionProvider"
         return "CPUExecutionProvider"
 
+    @property
+    def runtime(self) -> str:
+        if isinstance(self.model, ORTModel):
+            return "onnxruntime"
+        return "pytorch"
+
     def generate(self, prompt: str, sequence_length: int) -> str:
         input_tokenized = self.tokenizer(prompt, return_tensors="pt")
         if self.device:
@@ -80,14 +86,23 @@ class GPTJModel:
         return output_text
 
 
-def download_to(dest_dir: str):
+def export_to(dest_dir: str):
     import subprocess
     import sys
 
-    export_command = f"{sys.executable} -m optimum.exporters.onnx --model EleutherAI/gpt-j-6B --task causal-lm --framework pt {dest_dir}"
+    export_command = f"{sys.executable} -m optimum.exporters.onnx --model EleutherAI/gpt-j-6B --task causal-lm --atol 1e-04 --framework pt {dest_dir}"
+    # Explicitly disable CUDA so we use CPU for the export. The GPU RAM requirements are quite high otherwise.
     export_env = os.environ.copy()
     export_env["ORT_CUDA_UNAVAILABLE"] = "1"
-    subprocess.run(export_command, shell=True, check=False, env=export_env)
+    subprocess.run(
+        export_command,
+        shell=True,
+        check=True,
+        env=export_env,
+        stderr=sys.stderr,
+        stdout=sys.stdout,
+    )
+    logger.info(f"Exported model to {dest_dir}.")
 
 
 def convert_to_fp16(

@@ -2,12 +2,18 @@ import dataclasses
 import typing
 import time
 
+import numpy as np
+
 
 @dataclasses.dataclass(frozen=True)
 class BenchmarkResult:
     latencies_ms: typing.Tuple[float, ...]
     start_ns: int
     end_ns: int
+
+    @property
+    def latency_avg_ms(self) -> float:
+        return np.mean(self.latencies_ms)
 
     @property
     def total_duration_ms(self) -> float:
