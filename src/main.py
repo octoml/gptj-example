@@ -32,7 +32,7 @@ def benchmark_model(
     BENCHMARK_RUNS = 10
 
     def get_generate_fn(sequence, batch):
-        return lambda: model.generate(prompt, sequence)
+        return lambda: model.generate(prompt, sequence, batch)
 
     with open(result_path, "w") as csv_file:
         fieldnames = ["runtime", "sequence", "batch_size", "latency_avg_ms", "qps"]
@@ -211,9 +211,7 @@ if __name__ == "__main__":
     generate_args = "generate --onnx-model-path gptj.onnx --prompt".split()
     generate_args.append('"once upon a time, there was a little monkey,"')
 
-    benchmark_args = (
-        "benchmark --onnx-model-path gptj.onnx --sequence-lengths 64 128".split()
-    )
+    benchmark_args = "benchmark --onnx-model-path gptj.onnx --sequence-lengths 64 --batch-sizes 1 2 4".split()
 
     args = parser.parse_args(benchmark_args)
     args.func(args)

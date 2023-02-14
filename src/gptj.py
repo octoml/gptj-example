@@ -72,7 +72,9 @@ class GPTJModel:
             return "onnxruntime"
         return "pytorch"
 
-    def generate(self, prompt: str, sequence_length: int) -> str:
+    def generate(self, prompt: str, sequence_length: int, batch_size: int = 1) -> str:
+        if batch_size > 1:
+            prompt = [prompt] * batch_size
         input_tokenized = self.tokenizer(prompt, return_tensors="pt")
         if self.device:
             input_tokenized = input_tokenized.to(self.device)
